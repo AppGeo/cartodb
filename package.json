@@ -1,0 +1,15 @@
+{
+  "name": "cartodb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "create-sql": "^1.1.0",
+    "querystringparser": "^0.1.1"
+  }
+}
