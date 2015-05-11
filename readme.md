@@ -2,7 +2,9 @@ cartodb tools
 ===
 
 
-some tools for working with cartodb, for now works only with api keys
+some tools for working with cartodb, for now works only with api keys.
+
+Omit the callback from .exec and it will return a readable stream.
 
 ```js
 var CartoDB = require('cartodb-tools');
