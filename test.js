@@ -31,6 +31,10 @@ test('basic', function (t) {
         ammount: 3,
         description: 'three',
         ifso: true
+      },
+      {
+        description: 'try to use $cartodb$ to escape',
+        ifso: true
       }
     ]).exec(function (err) {
       t.error(err, err && err.stack);
