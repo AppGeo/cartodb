@@ -5,13 +5,14 @@ cartodb tools
 some tools for working with cartodb, for now works only with api keys
 
 ```js
-var CartoDB = require('tbd');
+var CartoDB = require('cartodb-tools');
 var cartodb = new CartoDB('username', 'apikey');
 
 cartodb.insert.into('table').values({
   foo: 'bar'
 }).exec(function (err, resp) {
   // result of insert into table (foo) values ('bar');
+  // also takes an array of values
 });
 
 cartodb.update.from('table').where([{foo: 'bar'}, {'thing': 'otherThing'}]).values({
