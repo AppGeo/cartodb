@@ -1,9 +1,10 @@
 'use strict';
+var debug = require('debug')('cartodb');
 var qs = require('querystringparser');
 var url = require('url');
 var https = require('https');
 var PassThrough = require('stream').PassThrough;
-var JSONStream = require('JSONStream');
+var JSONStream = require('jsonstream2a');
 var createSQL = require('create-sql');
 var crypto = require('crypto');
 
@@ -28,13 +29,14 @@ CartoDB.prototype.request = function (sql) {
   opts.headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Content-Length': query.length
-  }
+  };
   var req = https.request(opts, function (resp) {
     out.emit('headers', resp.headers);
     out.emit('code', resp.statusCode);
+    debug('code: ' + resp.statusCode);
     resp.on('error', function (e) {
       out.emit('error', e);
-    })
+    });
     resp.pipe(out);
   });
   req.on('error', function (e) {
@@ -46,13 +48,28 @@ CartoDB.prototype.request = function (sql) {
 };
 CartoDB.prototype.createReadStream = function (sql) {
   var out = JSONStream.parse('rows.*');
-  return this.request(sql).on('error', function (e) {
+  //var out = new PassThrough();
+  this.request(sql).on('error', function (e) {
     out.emit('error', e);
   }).on('headers', function (e) {
     out.emit('headers', e);
   }).on('code', function (e) {
+    if (e > 299) {
+      var data = [];
+      this.on('data', function (d) {
+        data.push(d);
+      }).on('finish', function () {
+        var err = Buffer.concat(data).toString();
+        debug(err);
+        out.emit('error', new Error(err));
+      });
+    } else {
+      debug('pipeing');
+      this.pipe(out);
+    }
     out.emit('code', e);
-  }).pipe(out);
+  });
+  return out;
 };
 CartoDB.prototype.query = function (sql, callback) {
   var out = [];
@@ -72,59 +89,37 @@ CartoDB.prototype.exec = function (sql, values, cb) {
       values: values
     };
   }
-  var outSql = prepare({
-    sql: sql,
-    values: values
-  });
+  var outSql = prepare(sql);
+  debug(outSql);
   if (typeof cb === 'function') {
     return this.query(outSql, cb);
   } else {
-    return this.ce.createReadStream(outSql);
+    return this.createReadStream(outSql);
   }
 };
-function tagRegex(tag) {
-  return new RegExp('\\$' + tag + '\\$');
-}
-function formatString(input) {
-  var tagBase = 'cartodb';
-  if (!input.match(tagRegex(tagBase))) {
-    return '$' + tagBase + '$';
-  }
-  var i = 0;
-  while(input.match(tagRegex(tagBase + i))) {
-    i++;
-  }
-  return '$' + tagBase + i + '$';
-}
-function cleanType(item) {
-  switch(typeof item) {
-    case 'string':
-      return formatString(item);
-    case 'number':
-      return 'numeric $$' + item + '$$';
-    case 'boolean':
-      return item ? 'true' : 'false';
-    case 'object':
-      if (Buffer.isBuffer(item)) {
-        return '$$\x' + item.toString('hex') + '$$';
-      }
-      if (item.type === 'Feature') {
-        return 'ST_GeomFromGeoJSON(' + formatString(JSON.stringify(item)) + ')';
-      }
-      return formatString(JSON.stringify(item));
-    default:
-      throw new TypeError('invalid data type: ' + typeof item);
-  }
-}
+
 function prepare(opts) {
   var sql = opts.sql;
   var values = opts.values;
   var name = makeName();
-  return [
-    'PREPARE ' + name + '() AS',
-    sql,
-    'EXECUTE ' + name + '(' + values.map(cleanType).join(',') + ');'
-  ].join('\n');
+  if (opts.insert) {
+    var out = [
+      'PREPARE ' + name + ' AS',
+      sql,
+      'BEGIN;'
+    ];
+    values.forEach(function (item) {
+      out.push('EXECUTE ' + name + (item.length ? ('(' + item.join(',') + ');') : ';'));
+    });
+    out.push('COMMIT;');
+    return out.join('\n');
+  } else {
+    return [
+      'PREPARE ' + name + ' AS',
+      sql,
+      'EXECUTE ' + name + (values.length ? ('(' + values.join(',') + ');') : ';')
+    ].join('\n');
+  }
 }
 
 Object.defineProperty(CartoDB.prototype, 'select', {
@@ -143,17 +138,21 @@ function Select(instance) {
 
 Select.prototype.from = function (table) {
   this._table = table;
+  return this;
 };
 
 Select.prototype.columns = function (ids) {
-  this._rows = Array.isArrays(ids) ? ids : [ids];
+  this._rows = Array.isArray(ids) ? ids : [ids];
+  return this;
 };
 
 Select.prototype.where = function (where) {
   this._where = where;
+  return this;
 };
 Select.prototype._makeSQL = function () {
   return createSQL.insert(this._table, this._rows, this._where);
+  return this;
 };
 Select.prototype.exec = function (cb) {
   if (!this._table || !this._where) {
@@ -172,22 +171,26 @@ Object.defineProperty(CartoDB.prototype, 'insert', {
 function Insert(instance) {
   this._instance = instance;
   this._table = null;
-  this._values = null;
+  this._values = [];
 }
 
 Insert.prototype.into = function (table) {
   this._table = table;
+  return this;
 };
 
 Insert.prototype.values = function (ids) {
-  this._rows = Array.isArrays(ids) ? ids : [ids];
+  this._values = this._values.concat(Array.isArray(ids) ? ids : [ids]);
+  return this;
 };
 
 Insert.prototype._makeSQL = function () {
-  return createSQL.insert(this._table, this._values);
+  var out = createSQL.insert(this._table, this._values);
+  out.insert = true;
+  return out;
 };
 Insert.prototype.exec = function (cb) {
-  if (!this._table || !this._values) {
+  if (!this._table || !this._values.length) {
     throw new TypeError('missing required value');
   }
   return this._instance.exec(this._makeSQL(), cb);
@@ -208,14 +211,17 @@ function Update(instance) {
 
 Update.prototype.from = function (table) {
   this._table = table;
+  return this;
 };
 
 Update.prototype.values = function (values) {
   this._values = values;
+  return this;
 };
 
 Update.prototype.where = function (where) {
   this._where = where;
+  return this;
 };
 Update.prototype._makeSQL = function () {
   return createSQL.insert(this._table, this._where, this._values);
@@ -241,10 +247,12 @@ function Delete(instance) {
 
 Delete.prototype.from = function (table) {
   this._table = table;
+  return this;
 };
 
 Delete.prototype.where = function (where) {
   this._where = where;
+  return this;
 };
 
 Delete.prototype._makeSQL = function () {
