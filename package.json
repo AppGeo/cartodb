@@ -1,5 +1,5 @@
 {
-  "name": "cartodb",
+  "name": "cartodb-tools",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,10 +7,11 @@
     "test": "node test.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "create-sql": "^1.1.0",
     "debug": "^2.2.0",
+    "jsonstream2a": "^2.0.1",
     "querystringparser": "^0.1.1"
   },
   "devDependencies": {
