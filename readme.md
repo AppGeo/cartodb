@@ -1,39 +1,24 @@
 cartodb tools
 ===
 
+```bash
+npm install cartodb-tools --save
+```
 
 some tools for working with cartodb, for now works only with api keys.
 
-Omit the callback from .exec and it will return a readable stream.
+API is shamelessly copied from [KNEX](http://knexjs.org/) as is much of the code,
+see the documentation over their for details, currently does not support table creation.
+
+One difference is that geojson geometries are treated as such and converted to
+geometries appropriate to the `the_geom` field in cartodb.
+
 
 ```js
-var CartoDB = require('cartodb-tools');
-var cartodb = new CartoDB('username', 'apikey');
-
-cartodb.insert.into('table').values({
-  foo: 'bar'
-}).exec(function (err, resp) {
-  // result of insert into table (foo) values ('bar');
-  // also takes an array of values
-});
-
-cartodb.update.from('table').where([{foo: 'bar'}, {'thing': 'otherThing'}]).values({
-  baz: 'bat'
-}).exec(function (err, resp) {
-  // result of update table set baz = 'bat' where foo = 'bar' or thing = 'otherThing';
-});
-
-cartodb.select.from('table').columns('foo').where({
-  bar: 'bat',
-  'thing': 'otherThing'
-}).exec(function (err, resp) {
-  // result of select foo from table where bar = 'bat' and thing = 'otherThing';
-});
-
-cartodb.delete.from('table').where({
-  bar: 'bat',
-  'thing': 'otherThing'
-}).exec(function (err, resp) {
-  // result of delete from table where bar = 'bat' and thing = 'otherThing';
+var cartodb = require('cartodb-tools')('username', 'api-key')
+cartodb(TABLE_NAME).select('foo').where('bar', 'baz').then(function (resp) {
+  //use resp
+}).catch(function (err) {
+  // something bad happened
 });
 ```

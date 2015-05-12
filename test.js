@@ -1,21 +1,29 @@
 'use strict';
-var Cartodb = require('./');
+
 var test = require('tape');
 var config = require('./test.config.json');
-var cartodb = new Cartodb(config.username, config.apikey);
+var cartodb = require('./')(config.username, config.apikey);
 var TABLE_NAME = 'test_table';
 test('basic', function (t) {
   t.test('clear', function (t) {
     t.plan(1);
-    cartodb.delete.from(TABLE_NAME).exec(function (err) {
+    cartodb(TABLE_NAME).delete()
+    .exec(function (err) {
       t.error(err);
       console.log('err', err && err.toString());
     });
   });
+  t.test('clear check', function (t) {
+    t.plan(2);
+    cartodb(TABLE_NAME).count()
+    .exec(function (err, resp) {
+      t.error(err);
+      t.deepEquals([{count: 0}], resp);
+    });
+  });
   t.test('insert', function (t) {
     t.plan(1);
-    cartodb.insert.into(TABLE_NAME)
-    .values([
+    cartodb.insert([
       {
         ammount: 1,
         description: 'one',
@@ -34,10 +42,46 @@ test('basic', function (t) {
       },
       {
         description: 'try to use $cartodb$ to escape',
-        ifso: true
+        ifso: false,
+        the_geom: {"type":"Point","coordinates":[-98.19805569,29.49655938]}
       }
-    ]).exec(function (err) {
+    ]).into(TABLE_NAME).exec(function (err) {
       t.error(err, err && err.stack);
+    });
+  });
+  t.test('insert check', function (t) {
+    t.plan(2);
+    cartodb.from(TABLE_NAME).count()
+    .exec(function (err, resp) {
+      t.error(err);
+      t.deepEquals([{count: 4}], resp);
+    });
+  });
+  t.test('select 1', function (t) {
+    t.plan(1);
+    cartodb.select('ammount').from(TABLE_NAME).where('ifso', true).then(function (resp) {
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 3 } ]);
+    }).catch(function () {
+      t.notOk(true);
+    });
+  });
+  t.test('update', function (t) {
+    t.plan(1);
+    cartodb(TABLE_NAME).update({
+      ifso: true
+    }).where('name', 'even').exec(function (err) {
+      t.error(err, err && err.stack);
+    });
+  });
+  t.test('select 2', function (t) {
+    t.plan(2);
+    cartodb.select('ammount').from(TABLE_NAME).where('ifso', true).exec(function (err, resp) {
+      t.error(err, err && err.stack);
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 2 }, { ammount: 3 } ]);
     });
   });
 });

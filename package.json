@@ -2,15 +2,16 @@
   "name": "cartodb-tools",
   "version": "1.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "node test.js"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "create-sql": "^1.1.0",
+    "bluebird": "^2.9.25",
     "debug": "^2.2.0",
+    "inherits": "^2.0.1",
     "jsonstream2a": "^2.0.1",
     "querystringparser": "^0.1.1"
   },
