@@ -84,4 +84,12 @@ test('basic', function (t) {
       }), [ { ammount: 1 }, { ammount: 2 }, { ammount: 3 } ]);
     });
   });
+  t.test('check version', function (t) {
+    t.plan(1);
+    cartodb.raw('select version();').then(function (resp) {
+      t.ok(true, JSON.stringify(resp, false, 2));
+    }).catch(function (e) {
+      t.error(e);
+    });
+  });
 });
