@@ -60,6 +60,9 @@ test('basic', function (t) {
   t.test('select 1', function (t) {
     t.plan(1);
     cartodb.select('ammount').from(TABLE_NAME).where('ifso', true).then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
       t.deepEquals(resp.sort(function (a, b) {
         return a.ammount - b.ammount;
       }), [ { ammount: 1 }, { ammount: 3 } ]);
@@ -79,6 +82,9 @@ test('basic', function (t) {
     t.plan(2);
     cartodb.select('ammount').from(TABLE_NAME).where('ifso', true).exec(function (err, resp) {
       t.error(err, err && err.stack);
+      if (!resp) {
+        return t.ok(resp);
+      }
       t.deepEquals(resp.sort(function (a, b) {
         return a.ammount - b.ammount;
       }), [ { ammount: 1 }, { ammount: 2 }, { ammount: 3 } ]);
@@ -86,10 +92,33 @@ test('basic', function (t) {
   });
   t.test('check version', function (t) {
     t.plan(1);
-    cartodb.raw('select version();').then(function (resp) {
-      t.ok(true, JSON.stringify(resp, false, 2));
+    cartodb.raw('select version();').then(function () {
+      t.ok(true);//, JSON.stringify(resp, false, 2));
     }).catch(function (e) {
       t.error(e);
+    });
+  });
+  t.test('table info', function (t) {
+    t.plan(1);
+    cartodb(cartodb.raw('INFORMATION_SCHEMA.COLUMNS')).select('column_name')
+    .where({
+      table_name: TABLE_NAME
+    }).then(function () {
+      t.ok(true);//, JSON.stringify(resp, false, 2));
+    }).catch(function (e) {
+      t.error(e);
+    });
+  });
+  t.test('select 2', function (t) {
+    t.plan(2);
+    cartodb.select('ammount').from(TABLE_NAME).whereRaw('ifso = ?', [true]).limit(1).exec(function (err, resp) {
+      t.error(err, err && err.stack);
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 } ]);
     });
   });
 });
