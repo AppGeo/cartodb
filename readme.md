@@ -15,12 +15,17 @@ geometries appropriate to the `the_geom` field in cartodb.
 
 
 ```js
-var cartodb = require('cartodb-tools')('username', 'api-key')
-cartodb(TABLE_NAME).select('foo').where('bar', 'baz').then(function (resp) {
-  //use resp
-}).catch(function (err) {
-  // something bad happened
-});
+var cartodb = require('cartodb-tools')('username', 'api-key');
+
+cartodb('myTable')
+  .select('foo')
+  .where('bar', 'baz')
+  .then(function (resp) {
+    //use resp
+  })
+  .catch(function (err) {
+    // something bad happened
+  });
 ```
 
 Write Stream
