@@ -22,3 +22,12 @@ cartodb(TABLE_NAME).select('foo').where('bar', 'baz').then(function (resp) {
   // something bad happened
 });
 ```
+
+Write Stream
+
+
+```js
+var cartodb = require('cartodb-tools')('username', 'api-key')
+cartodb.createWriteStream('table_name', opts);
+// available options are `create` to create a new table
+```
