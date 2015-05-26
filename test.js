@@ -100,11 +100,11 @@ test('basic', function (t) {
   });
   t.test('table info', function (t) {
     t.plan(1);
-    cartodb(cartodb.raw('INFORMATION_SCHEMA.COLUMNS')).select('column_name')
+    cartodb(cartodb.raw('INFORMATION_SCHEMA.COLUMNS')).select('column_name', 'data_type')
     .where({
       table_name: TABLE_NAME
-    }).then(function () {
-      t.ok(true);//, JSON.stringify(resp, false, 2));
+    }).then(function (resp) {
+      t.ok(true, JSON.stringify(resp, false, 2));
     }).catch(function (e) {
       t.error(e);
     });
@@ -119,6 +119,44 @@ test('basic', function (t) {
       t.deepEquals(resp.sort(function (a, b) {
         return a.ammount - b.ammount;
       }), [ { ammount: 1 } ]);
+    });
+  });
+  t.test('create table', function (t) {
+    t.plan(1);
+    cartodb.schema.createTable('cartodb_tools_test', function (table) {
+      table.boolean('bool');
+      table.text('some_text');
+    }).then(function (resp) {
+      t.ok(true, JSON.stringify(resp, false, 2));
+    }).catch(function (e) {
+      t.error(e);
+    });
+  });
+  // t.test('add metadata table info', function (t) {
+  //   t.plan(1);
+  //   cartodb.raw('select cdb_cartodbfytable(\'cartodb_tools_test\')').then(function (resp) {
+  //     t.ok(true, JSON.stringify(resp, false, 2));
+  //   }).catch(function (e) {
+  //     t.error(e);
+  //   });
+  // });
+  t.test('created table info', function (t) {
+    t.plan(1);
+    cartodb(cartodb.raw('INFORMATION_SCHEMA.COLUMNS')).select('column_name', 'data_type')
+    .where({
+      table_name: 'cartodb_tools_test'
+    }).then(function (resp) {
+      t.equals(resp.length, 7);
+    }).catch(function (e) {
+      t.error(e);
+    });
+  });
+  t.test('drop table', function (t) {
+    t.plan(1);
+    cartodb.schema.dropTableIfExists('cartodb_tools_test').then(function (resp) {
+      t.ok(true, JSON.stringify(resp, false, 2));
+    }).catch(function (e) {
+      t.error(e);
     });
   });
 });
