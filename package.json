@@ -13,7 +13,7 @@
     "debug": "^2.2.0",
     "duplexify": "^3.4.2",
     "inherits": "^2.0.1",
-    "jsonstream2a": "^2.0.1",
+    "jsonstream3": "^3.0.0",
     "querystringparser": "^0.1.1",
     "readable-stream": "^2.0.2"
   },
