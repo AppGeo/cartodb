@@ -138,7 +138,7 @@ test('basic', function (t) {
     .where({
       table_name: 'cartodb_tools_test_fin'
     }).then(function (resp) {
-      t.equals(resp.length, 7);
+      t.equals(resp.length, 5);
     }).catch(function (e) {
       t.error(e);
     });
@@ -152,3 +152,32 @@ test('basic', function (t) {
     });
   });
 });
+test('advanced', function (t) {
+  t.test('control', function (t) {
+    t.plan(1);
+    cartodb.raw('select true').then(function (r){
+      console.log(r);
+      t.ok(true, 'works');
+    }).catch(function (e) {
+      t.error(e);
+    })
+  });
+  t.test('new way', function (t) {
+    t.plan(1);
+    cartodb.raw('select true').batch().then(function (r){
+      t.ok(true, 'works');
+    }).catch(function (e) {
+      t.error(e, e.stack);
+    })
+  });
+  t.test('fallback', function (t) {
+    t.plan(1);
+    cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'first part!!!!\', \'no error\', NOW())')
+    .onSuccess(cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'success part!!!!\', \'no error\', NOW())'))
+    .onError(cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'<%= job_id %>\', \'<%= error_message %>\', NOW())')).batch().then(function (r){
+      t.ok(true, 'works');
+    }).catch(function (e) {
+      t.error(e, e.stack);
+    })
+  });
+})
