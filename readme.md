@@ -73,3 +73,14 @@ cartodb('myTable')
   .then(function (resp) {
     //use resp
   })
+  ```
+
+By default raw queries are wrapped in a transaction, use `.noTransaction()` to avoid this, useful for queries that can't be in transactions
+
+```js
+cartodb.raw('VACUUM ANALYZE').noTransaction().batch().then(function () {
+  console.log('yay!');
+}).catch(function () {
+  console.log('no!');
+});
+```
