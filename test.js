@@ -38,7 +38,8 @@ test('basic', function (t) {
       {
         ammount: 3,
         description: 'three',
-        ifso: true
+        ifso: true,
+        updated_at2: new Date()
       },
       {
         description: 'try to use $cartodb$ to escape',
@@ -70,11 +71,30 @@ test('basic', function (t) {
       t.notOk(true);
     });
   });
+  t.test('select 2', function (t) {
+    t.plan(1);
+    cartodb.select('ammount').from(TABLE_NAME).where('updated_at2', '<', new Date()).then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp, [  { ammount: 3 } ]);
+    }).catch(function () {
+      t.notOk(true);
+    });
+  });
   t.test('update', function (t) {
     t.plan(1);
     cartodb(TABLE_NAME).update({
       ifso: true
     }).where('name', 'even').exec(function (err) {
+      t.error(err, err && err.stack);
+    });
+  });
+  t.test('update 2', function (t) {
+    t.plan(1);
+    cartodb(TABLE_NAME).update({
+      the_geom: {"type":"MultiPoint","coordinates":[[-98.19805569,29.49655938],[-97,28]]}
+    }).where({the_geom: {"type":"Point","coordinates":[-98.19805569,29.49655938]}}).exec(function (err) {
       t.error(err, err && err.stack);
     });
   });
