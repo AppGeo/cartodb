@@ -1,6 +1,6 @@
 {
   "name": "cartodb-tools",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "description": "knex based sql library for cartodb",
   "main": "lib/index.js",
   "scripts": {
