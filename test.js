@@ -71,6 +71,73 @@ test('basic', function (t) {
       t.notOk(true);
     });
   });
+  t.test('select 1 semi raw 1', function (t) {
+    t.plan(1);
+    cartodb.select('ammount').from(TABLE_NAME).whereRaw('??= ?', ['ifso', true]).then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 3 } ]);
+    }).catch(function (e) {
+      t.error(e);
+    });
+  });
+  t.test('select 1 semi raw 2', function (t) {
+    t.plan(1);
+    cartodb.select('ammount').from(TABLE_NAME).whereRaw(':key: = :val', {key: 'ifso', val: true}).then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 3 } ]);
+    }).catch(function (e) {
+      t.error(e);
+    });
+  });
+  t.test('select 1 raw', function (t) {
+    t.plan(1);
+    cartodb.raw('select ammount from test_table where ifso = true').then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 3 } ]);
+    }).catch(function (e) {
+      t.notOk(true, e);
+    });
+  });
+  t.test('select 1 rawer', function (t) {
+    t.plan(1);
+    cartodb.raw('select ?? from ?? where ?? = ?', ['ammount', TABLE_NAME, 'ifso', true]).then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 3 } ]);
+    }).catch(function (e) {
+      t.notOk(true, e);
+    });
+  });
+  t.test('select 1 rawest', function (t) {
+    t.plan(1);
+    cartodb.raw('select :field: from :table: where :col: = :val', {
+      field: 'ammount', table: TABLE_NAME, col: 'ifso', val: true
+    }).then(function (resp) {
+      if (!resp) {
+        return t.ok(resp);
+      }
+      t.deepEquals(resp.sort(function (a, b) {
+        return a.ammount - b.ammount;
+      }), [ { ammount: 1 }, { ammount: 3 } ]);
+    }).catch(function (e) {
+      t.notOk(true, e);
+    });
+  });
   t.test('select 2', function (t) {
     t.plan(1);
     cartodb.select('ammount').from(TABLE_NAME).where('updated_at2', '<', new Date()).then(function (resp) {
@@ -141,28 +208,28 @@ test('basic', function (t) {
       }), [ { ammount: 1 } ]);
     });
   });
-  t.test('create table', function (t) {
-    t.plan(1);
-    cartodb.schema.createTable('cartodb_tools_test_fin', function (table) {
-      table.boolean('bool');
-      table.text('some_text');
-    }).then(function (resp) {
-      t.ok(true, JSON.stringify(resp, false, 2));
-    }).catch(function (e) {
-      t.error(e);
-    });
-  });
-  t.test('created table info', function (t) {
-    t.plan(1);
-    cartodb(cartodb.raw('INFORMATION_SCHEMA.COLUMNS')).select('column_name', 'data_type')
-    .where({
-      table_name: 'cartodb_tools_test_fin'
-    }).then(function (resp) {
-      t.equals(resp.length, 5);
-    }).catch(function (e) {
-      t.error(e);
-    });
-  });
+  // t.test('create table', function (t) {
+  //   t.plan(1);
+  //   cartodb.schema.createTable('cartodb_tools_test_fin', function (table) {
+  //     table.boolean('bool');
+  //     table.text('some_text');
+  //   }).then(function (resp) {
+  //     t.ok(true, JSON.stringify(resp, false, 2));
+  //   }).catch(function (e) {
+  //     t.error(e);
+  //   });
+  // });
+  // t.test('created table info', function (t) {
+  //   t.plan(1);
+  //   cartodb(cartodb.raw('INFORMATION_SCHEMA.COLUMNS')).select('column_name', 'data_type')
+  //   .where({
+  //     table_name: 'cartodb_tools_test_fin'
+  //   }).then(function (resp) {
+  //     t.equals(resp.length, 5);
+  //   }).catch(function (e) {
+  //     t.error(e);
+  //   });
+  // });
   t.test('drop table', function (t) {
     t.plan(1);
     cartodb.schema.dropTableIfExists('cartodb_tools_test_fin').then(function (resp) {
@@ -190,14 +257,14 @@ test('advanced', function (t) {
       t.error(e, e.stack);
     })
   });
-  t.test('fallback', function (t) {
-    t.plan(1);
-    cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'first part!!!!\', \'no error\', NOW())')
-    .onSuccess(cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'success part!!!!\', \'no error\', NOW())'))
-    .onError(cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'<%= job_id %>\', \'<%= error_message %>\', NOW())')).batch().then(function (r){
-      t.ok(true, 'works');
-    }).catch(function (e) {
-      t.error(e, e.stack);
-    })
-  });
+  // t.test('fallback', function (t) {
+  //   t.plan(1);
+  //   cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'first part!!!!\', \'no error\', NOW())')
+  //   .onSuccess(cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'success part!!!!\', \'no error\', NOW())'))
+  //   .onError(cartodb.raw('INSERT INTO errors_log (job_id, error_message, date) VALUES (\'<%= job_id %>\', \'<%= error_message %>\', NOW())')).batch().then(function (r){
+  //     t.ok(true, 'works');
+  //   }).catch(function (e) {
+  //     t.error(e, e.stack);
+  //   })
+  // });
 })
